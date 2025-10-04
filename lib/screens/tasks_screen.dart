@@ -11,6 +11,7 @@ class TasksScreen extends StatefulWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen> {
+  String? errorMessage; // null if no error, string if there is an error
   String newTaskTitle = '';
   List<Task> items = [
     Task(title: 'Take Flutter Lecture', checkedState: false),
@@ -26,8 +27,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
   Future closeKeyboard() async {
     FocusScope.of(context).unfocus(); // closes keyboard
-    // wait a short delay (200–300 ms is usually enough for keyboard closing)
-    await Future.delayed(Duration(milliseconds: 300));
+    await Future.delayed(Duration(milliseconds: 500));
   }
 
   void addItem(Task newTask) async {
@@ -96,7 +96,12 @@ class _TasksScreenState extends State<TasksScreen> {
                           ),
                           title: Text(
                             items[index].title,
-                            style: TextStyle(color: Colors.black),
+                            style: TextStyle(
+                              color: Colors.black,
+                              decoration: items[index].checkedState
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
                           ),
                           value: items[index].checkedState,
                           onChanged: (newValue) {
@@ -117,6 +122,7 @@ class _TasksScreenState extends State<TasksScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          textEditingController.clear();
           showModalBottomSheet(context: context, builder: buildAddTaskTopUp);
         },
         backgroundColor: clr,
@@ -126,90 +132,102 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Widget buildAddTaskTopUp(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20.0),
-          topRight: Radius.circular(20.0),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text(
-              'Add Task',
-              style: TextStyle(
-                color: clr,
-                fontSize: 30.0,
-                fontWeight: FontWeight.bold,
-              ),
+    return StatefulBuilder(
+      //StatefulBuilder to update bottom sheet independently
+      builder: (context, setModalState) {
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20.0),
+              topRight: Radius.circular(20.0),
             ),
-            SizedBox(height: 10.0),
-            TextField(
-              controller: textEditingController,
-              onChanged: (val) {
-                setState(() {
-                  newTaskTitle = val;
-                });
-              },
-              maxLength: 50,
-              decoration: InputDecoration(
-                hintText: 'Enter title of task',
-                icon: Icon(Icons.calendar_month),
-                enabledBorder: UnderlineInputBorder(
-                  // default border (not focused)
-                  borderSide: BorderSide(color: Colors.grey, width: 1.5),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text(
+                  'Add Task',
+                  style: TextStyle(
+                    color: clr,
+                    fontSize: 30.0,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                focusedBorder: UnderlineInputBorder(
-                  // border when focused
-                  borderSide: BorderSide(color: clr, width: 2.0),
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (newTaskTitle == '') {
-                  await closeKeyboard();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('[!] Title of task cannot be empty.'),
+                SizedBox(height: 10.0),
+                TextField(
+                  controller: textEditingController,
+                  onChanged: (val) {
+                    setState(() {
+                      newTaskTitle = val;
+                      errorMessage = null;
+                    });
+                  },
+                  maxLength: 50,
+                  decoration: InputDecoration(
+                    errorText: errorMessage,
+                    hintText: 'Enter title of task',
+                    icon: Icon(Icons.calendar_month),
+                    enabledBorder: UnderlineInputBorder(
+                      // default border (not focused)
+                      borderSide: BorderSide(color: Colors.grey, width: 1.5),
                     ),
-                  );
-                } else {
-                  Task newTask = Task(title: newTaskTitle, checkedState: false);
-                  if (items.contains(newTask)) {
+                    focusedBorder: UnderlineInputBorder(
+                      // border when focused
+                      borderSide: BorderSide(color: clr, width: 2.0),
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
                     await closeKeyboard();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('[!] Title of task cannot be empty.'),
-                      ),
-                    );
-                  } else {
-                    addItem(newTask);
-                  }
-                }
-              },
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: clr,
-                  borderRadius: BorderRadius.horizontal(),
+                    if (newTaskTitle.trim() == '') {
+                      setModalState(() {
+                        errorMessage = 'Title of Task cannot be empty';
+                      });
+                    } else {
+                      if ((items.any(
+                        (task) =>
+                            task.title.toLowerCase().trim() ==
+                            newTaskTitle.toLowerCase().trim(),
+                      ))) {
+                        setModalState(() {
+                          errorMessage = 'Same Task cannot be added Again';
+                        });
+                      } else {
+                        setState(() {
+                          addItem(
+                            Task(title: newTaskTitle, checkedState: false),
+                          );
+                        });
+                        textEditingController.clear();
+                        setModalState(() {
+                          errorMessage = null;
+                          newTaskTitle = '';
+                        });
+                        Navigator.pop(context);
+                      }
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(color: clr),
+                    padding: EdgeInsets.all(20.0),
+                    child: Text(
+                      'Add',
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-                padding: EdgeInsets.all(20.0),
-                child: Text(
-                  'Add',
-                  style: TextStyle(color: Colors.white),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

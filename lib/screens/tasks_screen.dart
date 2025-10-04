@@ -120,12 +120,28 @@ class _TasksScreenState extends State<TasksScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Text('Add Task', style: TextStyle(color: clr, fontSize: 30.0)),
+            Text(
+              'Add Task',
+              style: TextStyle(
+                color: clr,
+                fontSize: 30.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 10.0),
             TextField(
-              maxLength: 40,
+              maxLength: 50,
               decoration: InputDecoration(
                 hintText: 'Enter title of task',
-                prefixIcon: Icon(Icons.calendar_month),
+                icon: Icon(Icons.calendar_month),
+                enabledBorder: UnderlineInputBorder(
+                  // default border (not focused)
+                  borderSide: BorderSide(color: Colors.grey, width: 1.5),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  // border when focused
+                  borderSide: BorderSide(color: clr, width: 2.0),
+                ),
               ),
             ),
           ],

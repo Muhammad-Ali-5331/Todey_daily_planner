@@ -11,11 +11,31 @@ class TasksScreen extends StatefulWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen> {
+  String newTaskTitle = '';
   List<Task> items = [
     Task(title: 'Take Flutter Lecture', checkedState: false),
     Task(title: 'Submit a Task on Leetcode', checkedState: true),
     Task(title: 'Submit a Task on Geeksforgeeks', checkedState: false),
   ];
+  TextEditingController textEditingController = TextEditingController();
+  @override
+  void dispose() {
+    super.dispose();
+    textEditingController.dispose();
+  }
+
+  Future closeKeyboard() async {
+    FocusScope.of(context).unfocus(); // closes keyboard
+    // wait a short delay (200–300 ms is usually enough for keyboard closing)
+    await Future.delayed(Duration(milliseconds: 300));
+  }
+
+  void addItem(Task newTask) async {
+    items.add(newTask);
+    textEditingController.clear();
+    await closeKeyboard();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,6 +150,12 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
             SizedBox(height: 10.0),
             TextField(
+              controller: textEditingController,
+              onChanged: (val) {
+                setState(() {
+                  newTaskTitle = val;
+                });
+              },
               maxLength: 50,
               decoration: InputDecoration(
                 hintText: 'Enter title of task',
@@ -141,6 +167,43 @@ class _TasksScreenState extends State<TasksScreen> {
                 focusedBorder: UnderlineInputBorder(
                   // border when focused
                   borderSide: BorderSide(color: clr, width: 2.0),
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (newTaskTitle == '') {
+                  await closeKeyboard();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('[!] Title of task cannot be empty.'),
+                    ),
+                  );
+                } else {
+                  Task newTask = Task(title: newTaskTitle, checkedState: false);
+                  if (items.contains(newTask)) {
+                    await closeKeyboard();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('[!] Title of task cannot be empty.'),
+                      ),
+                    );
+                  } else {
+                    addItem(newTask);
+                  }
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: clr,
+                  borderRadius: BorderRadius.horizontal(),
+                ),
+                padding: EdgeInsets.all(20.0),
+                child: Text(
+                  'Add',
+                  style: TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),

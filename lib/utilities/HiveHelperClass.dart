@@ -29,11 +29,7 @@ class HiveHelper {
     }
   }
 
-  void updateItemsList({bool mounted = true}) {
-    if (mounted) {
-      items = _tasksBox.values.toList();
-    }
-  }
+  void updateItemsList() => items = _tasksBox.values.toList();
 
   Future updateItemState(int index, bool? newValue) async {
     final task = _tasksBox.getAt(index);

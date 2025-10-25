@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utilities/items_class.dart';
+import 'package:hive/hive.dart';
 
 const clr = Colors.blueAccent;
 
@@ -13,16 +14,33 @@ class TasksScreen extends StatefulWidget {
 class _TasksScreenState extends State<TasksScreen> {
   String? errorMessage; // null if no error, string if there is an error
   String newTaskTitle = '';
-  List<Task> items = [
-    Task(title: 'Take Flutter Lecture', checkedState: false),
-    Task(title: 'Submit a Task on Leetcode', checkedState: true),
-    Task(title: 'Submit a Task on Geeksforgeeks', checkedState: false),
-  ];
+  late List<Task> items;
   TextEditingController textEditingController = TextEditingController();
+  late Box<Task> tasksBox;
+
+  @override
+  void initState() {
+    super.initState();
+    tasksBox = Hive.box<Task>('tasksBox');
+    if (tasksBox.isEmpty) {
+      items = [
+        Task(title: 'Take Flutter Lecture', checkedState: false),
+        Task(title: 'Submit a Task on Leetcode', checkedState: true),
+        Task(title: 'Submit a Task on Geeksforgeeks', checkedState: false),
+      ];
+      updateHiveBox();
+    } else {
+      updateItemsList();
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();
     textEditingController.dispose();
+    updateHiveBox();
+    tasksBox.close();
+    super.dispose();
   }
 
   Future closeKeyboard() async {
@@ -30,10 +48,26 @@ class _TasksScreenState extends State<TasksScreen> {
     await Future.delayed(Duration(milliseconds: 500));
   }
 
+  void updateHiveBox() {
+    for (var item in items) {
+      tasksBox.add(item);
+    }
+    print(tasksBox.values.toList());
+  }
+
+  void updateItemsList() {
+    if (mounted) {
+      setState(() {
+        items = tasksBox.values.toList();
+      });
+    }
+  }
+
   void addItem(Task newTask) async {
-    items.add(newTask);
     textEditingController.clear();
     await closeKeyboard();
+    tasksBox.add(newTask);
+    updateItemsList();
   }
 
   @override
@@ -87,10 +121,9 @@ class _TasksScreenState extends State<TasksScreen> {
                       itemBuilder: (build, index) {
                         return CheckboxListTile(
                           secondary: TextButton(
-                            onPressed: () {
-                              setState(() {
-                                items.removeAt(index);
-                              });
+                            onPressed: () async {
+                              await tasksBox.deleteAt(index);
+                              updateItemsList();
                             },
                             child: Icon(Icons.delete, color: Colors.red),
                           ),
@@ -104,11 +137,11 @@ class _TasksScreenState extends State<TasksScreen> {
                             ),
                           ),
                           value: items[index].checkedState,
-                          onChanged: (newValue) {
-                            setState(() {
-                              items[index].checkedState =
-                                  newValue ?? items[index].checkedState;
-                            });
+                          onChanged: (newValue) async {
+                            final task = tasksBox.getAt(index);
+                            task?.checkedState = newValue ?? task.checkedState;
+                            await task?.save();
+                            updateItemsList();
                           },
                         );
                       },
@@ -198,17 +231,12 @@ class _TasksScreenState extends State<TasksScreen> {
                           errorMessage = 'Same Task cannot be added Again';
                         });
                       } else {
-                        setState(() {
-                          addItem(
-                            Task(title: newTaskTitle, checkedState: false),
-                          );
-                        });
+                        addItem(Task(title: newTaskTitle, checkedState: false));
                         textEditingController.clear();
                         setModalState(() {
                           errorMessage = null;
                           newTaskTitle = '';
                         });
-                        Navigator.pop(context);
                       }
                     }
                   },

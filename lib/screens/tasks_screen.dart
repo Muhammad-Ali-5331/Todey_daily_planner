@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utilities/items_class.dart';
-import 'package:hive/hive.dart';
+import '../utilities/HiveHelperClass.dart';
 
 const clr = Colors.blueAccent;
 
@@ -12,61 +12,25 @@ class TasksScreen extends StatefulWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen> {
-  String? errorMessage; // null if no error, string if there is an error
+  String? errorMessage;
   String newTaskTitle = '';
-  late List<Task> items;
-  TextEditingController textEditingController = TextEditingController();
-  late Box<Task> tasksBox;
+  late final hiveHelper = HiveHelper();
 
   @override
   void initState() {
     super.initState();
-    tasksBox = Hive.box<Task>('tasksBox');
-    if (tasksBox.isEmpty) {
-      items = [
-        Task(title: 'Take Flutter Lecture', checkedState: false),
-        Task(title: 'Submit a Task on Leetcode', checkedState: true),
-        Task(title: 'Submit a Task on Geeksforgeeks', checkedState: false),
-      ];
-      updateHiveBox();
-    } else {
-      updateItemsList();
-    }
   }
 
   @override
   void dispose() {
     super.dispose();
-    textEditingController.dispose();
-    updateHiveBox();
-    tasksBox.close();
+    hiveHelper.disposeInputTextController();
+    hiveHelper.updateHiveBox();
+    hiveHelper.closeHiveBox();
     super.dispose();
   }
 
-  Future closeKeyboard() async {
-    FocusScope.of(context).unfocus(); // closes keyboard
-    await Future.delayed(Duration(milliseconds: 500));
-  }
-
-  void updateHiveBox() {
-    for (var item in items) {
-      tasksBox.add(item);
-    }
-  }
-
-  void updateItemsList() {
-    if (mounted) {
-      setState(() {
-        items = tasksBox.values.toList();
-      });
-    }
-  }
-
-  void addItem(Task newTask) async {
-    textEditingController.clear();
-    tasksBox.add(newTask);
-    updateItemsList();
-  }
+  void updateCurrentState() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +59,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   ),
                 ),
                 Text(
-                  '${items.length} Tasks',
+                  '${hiveHelper.items.length} Tasks',
                   style: TextStyle(color: Colors.white),
                 ),
               ],
@@ -115,31 +79,29 @@ class _TasksScreenState extends State<TasksScreen> {
                   Expanded(
                     child: ListView.builder(
                       shrinkWrap: true,
-                      itemCount: items.length,
+                      itemCount: hiveHelper.items.length,
                       itemBuilder: (build, index) {
                         return CheckboxListTile(
                           secondary: TextButton(
                             onPressed: () async {
-                              await tasksBox.deleteAt(index);
-                              updateItemsList();
+                              await hiveHelper.deleteItem(index);
+                              updateCurrentState();
                             },
                             child: Icon(Icons.delete, color: Colors.red),
                           ),
                           title: Text(
-                            items[index].title,
+                            hiveHelper.items[index].title,
                             style: TextStyle(
                               color: Colors.black,
-                              decoration: items[index].checkedState
+                              decoration: hiveHelper.items[index].checkedState
                                   ? TextDecoration.lineThrough
                                   : null,
                             ),
                           ),
-                          value: items[index].checkedState,
+                          value: hiveHelper.items[index].checkedState,
                           onChanged: (newValue) async {
-                            final task = tasksBox.getAt(index);
-                            task?.checkedState = newValue ?? task.checkedState;
-                            await task?.save();
-                            updateItemsList();
+                            await hiveHelper.updateItemState(index, newValue);
+                            updateCurrentState();
                           },
                         );
                       },
@@ -153,7 +115,7 @@ class _TasksScreenState extends State<TasksScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          textEditingController.clear();
+          hiveHelper.clearInputField();
           showModalBottomSheet(context: context, builder: buildAddTaskTopUp);
         },
         backgroundColor: clr,
@@ -190,7 +152,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 ),
                 SizedBox(height: 10.0),
                 TextField(
-                  controller: textEditingController,
+                  controller: hiveHelper.inputFieldController,
                   onChanged: (val) {
                     setState(() {
                       newTaskTitle = val;
@@ -214,13 +176,12 @@ class _TasksScreenState extends State<TasksScreen> {
                 ),
                 TextButton(
                   onPressed: () async {
-                    await closeKeyboard();
                     if (newTaskTitle.trim() == '') {
                       setModalState(() {
                         errorMessage = 'Title of Task cannot be empty';
                       });
                     } else {
-                      if ((items.any(
+                      if ((hiveHelper.items.any(
                         (task) =>
                             task.title.toLowerCase().trim() ==
                             newTaskTitle.toLowerCase().trim(),
@@ -229,8 +190,11 @@ class _TasksScreenState extends State<TasksScreen> {
                           errorMessage = 'Same Task cannot be added Again';
                         });
                       } else {
-                        addItem(Task(title: newTaskTitle, checkedState: false));
-                        textEditingController.clear();
+                        hiveHelper.addTask(
+                          Task(title: newTaskTitle, checkedState: false),
+                        );
+                        hiveHelper.clearInputField();
+                        updateCurrentState();
                         setModalState(() {
                           errorMessage = null;
                           newTaskTitle = '';

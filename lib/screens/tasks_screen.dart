@@ -17,13 +17,7 @@ class _TasksScreenState extends State<TasksScreen> {
   late final hiveHelper = HiveHelper();
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void dispose() {
-    super.dispose();
     hiveHelper.disposeInputTextController();
     hiveHelper.updateHiveBox();
     hiveHelper.closeHiveBox();

@@ -52,7 +52,6 @@ class _TasksScreenState extends State<TasksScreen> {
     for (var item in items) {
       tasksBox.add(item);
     }
-    print(tasksBox.values.toList());
   }
 
   void updateItemsList() {

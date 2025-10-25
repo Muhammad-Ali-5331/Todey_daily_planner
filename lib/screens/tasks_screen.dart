@@ -65,7 +65,6 @@ class _TasksScreenState extends State<TasksScreen> {
 
   void addItem(Task newTask) async {
     textEditingController.clear();
-    await closeKeyboard();
     tasksBox.add(newTask);
     updateItemsList();
   }

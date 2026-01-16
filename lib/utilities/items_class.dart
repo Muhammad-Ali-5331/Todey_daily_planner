@@ -9,5 +9,25 @@ class Task extends HiveObject {
 
   @HiveField(1)
   bool checkedState;
-  Task({required this.title, required this.checkedState});
+
+  @HiveField(2)
+  String notes;
+
+  @HiveField(3)
+  DateTime? dueDate;
+
+  @HiveField(4)
+  int colorValue;
+
+  @HiveField(5)
+  DateTime createdAt;
+
+  Task({
+    required this.title,
+    required this.checkedState,
+    this.notes = '',
+    this.dueDate,
+    this.colorValue = 0xFF2196F3, // Default blue
+    DateTime? createdAt,
+  }) : this.createdAt = createdAt ?? DateTime.now();
 }

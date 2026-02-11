@@ -211,7 +211,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Choose Color'),
-        content: Container(
+        content: SizedBox(
           width: double.maxFinite,
           child: GridView.builder(
             shrinkWrap: true,

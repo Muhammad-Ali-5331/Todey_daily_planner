@@ -29,5 +29,5 @@ class Task extends HiveObject {
     this.dueDate,
     this.colorValue = 0xFF2196F3, // Default blue
     DateTime? createdAt,
-  }) : this.createdAt = createdAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now();
 }

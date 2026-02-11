@@ -188,7 +188,7 @@ class _TasksScreenState extends State<TasksScreen> {
         });
       },
       selectedColor: Colors.white,
-      backgroundColor: Colors.white24,
+      backgroundColor: Colors.blueAccent,
       labelStyle: TextStyle(
         color: isSelected ? clr : Colors.white,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
